@@ -33,6 +33,11 @@ server {
 }
 EOF
 
-write_config "print" "http://192.168.2.150:631"
+cd "$(dirname ${0})"
+
+while read line; do
+	write_config $line
+done < /etc/nginx/proxy-config.cfg
+
 nginx -g "daemon off;"
 
