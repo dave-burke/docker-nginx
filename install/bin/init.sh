@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 write_default() {
 	local outfile=/etc/nginx/conf.d/default.conf
 
