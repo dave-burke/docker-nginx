@@ -51,4 +51,5 @@ docker run --detach --name ${name} \
 	$httpsArgs \
 	--hostname "${host}" \
 	${image}
+set +x
 
