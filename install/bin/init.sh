@@ -52,6 +52,16 @@ while read line; do
 done < /etc/nginx/proxy-config.cfg
 
 if [[ -n "${CERT_EMAIL}" ]]; then
+	# Start nginx as a daemon
+	nginx
+
+	# Get certificate
+	certify "${HOSTNAME}" "${CERT_EMAIL}"
+
+	# Stop nginx
+	nginx -s stop
+
+	# Update configuration
 	sed -i "s/listen 80/listen 443 ssl/" /etc/nginx/conf.d/*
 	sed -i "s/#include/include/" /etc/nginx/conf.d/*
 fi
