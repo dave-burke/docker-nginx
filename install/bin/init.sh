@@ -13,7 +13,7 @@ write_default() {
 		location / {
 			root /usr/share/nginx/html;
 			try_files \$uri \$uri/ =404;
-			autoindex on;
+			autoindex off;
 		}
 
 	}
