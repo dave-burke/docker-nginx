@@ -1,12 +1,37 @@
 #!/bin/sh
 
-write_config() {
+write_default() {
+	local outfile=/etc/nginx/conf.d/default.conf
+
+	cat >> "${outfile}" <<-EOF
+	server {
+		listen 80 default_server;
+		server_name ${HOSTNAME};
+
+		#include /opt/https_import.conf;
+
+		location / {
+			root /usr/share/nginx/html;
+			try_files \$uri \$uri/ =404;
+			autoindex on;
+		}
+
+	}
+	EOF
+}
+
+write_proxy () {
 	local subdomain="${1}"
 	local backend="${2}"
-	cat >> /etc/nginx/conf.d/"${subdomain}".conf <<-EOF
+	local outfile="/etc/nginx/conf.d/"${subdomain}".conf"
+
+	cat >> "${outfile}" <<-EOF
 	server {
 		listen 80;
 		server_name ${subdomain}.${HOSTNAME};
+
+		#include /opt/https_import.conf;
+
 		location / {
 			proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 			proxy_set_header X-Forwarded-Host \$host;
@@ -19,25 +44,17 @@ write_config() {
 	EOF
 }
 
-cat > /etc/nginx/conf.d/default.conf <<-EOF
-server {
-	listen 80;
-	server_name ${HOSTNAME};
-
-	location / {
-		root /usr/share/nginx/html;
-		try_files \$uri \$uri/ =404;
-		autoindex on;
-	}
-
-}
-EOF
-
 cd "$(dirname ${0})"
 
+write_default "${listen}"
 while read line; do
-	write_config $line
+	write_proxy $line "${listen}"
 done < /etc/nginx/proxy-config.cfg
+
+if [[ -n "${CERT_EMAIL}" ]]; then
+	sed -i "s/listen 80/listen 443 ssl/" /etc/nginx/conf.d/*
+	sed -i "s/#include/include/" /etc/nginx/conf.d/*
+fi
 
 nginx -g "daemon off;"
 

@@ -11,7 +11,7 @@ usage() {
 
 [[ -n "${host}" ]] || { usage; exit 1; }
 if [[ -n "${email}" ]]; then
-	httpsArgs=" --publish 443:443 --env CERT_EMAIL=${email}"
+	httpsArgs=" --publish 443:443 --env CERT_EMAIL=${email} "
 fi
 
 image="dburke/nginx-proxy"
