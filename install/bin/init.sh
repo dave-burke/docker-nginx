@@ -5,7 +5,7 @@ set -e
 write_default() {
 	local outfile=/etc/nginx/conf.d/default.conf
 
-	cat >> "${outfile}" <<-EOF
+	cat > "${outfile}" <<-EOF
 	server {
 		listen 80 default_server;
 		server_name ${HOSTNAME};
