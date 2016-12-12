@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/sh
 
 dir="/usr/share/nginx/html"
 letsencrypt renew --non-interactive --agree-tos \
