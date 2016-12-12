@@ -63,6 +63,7 @@ if [[ -n "${CERT_EMAIL}" ]]; then
 
 		# Stop nginx
 		nginx -s stop
+		wait $(cat /var/run/nginx.pid)
 	fi
 
 	# Update configuration
