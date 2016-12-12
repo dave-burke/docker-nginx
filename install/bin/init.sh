@@ -59,7 +59,7 @@ if [[ -n "${CERT_EMAIL}" ]]; then
 		nginx
 
 		# Get certificate
-		certify "${HOSTNAME}" "${CERT_EMAIL}"
+		certify.sh "${HOSTNAME}" "${CERT_EMAIL}"
 
 		# Stop nginx
 		nginx -s stop
