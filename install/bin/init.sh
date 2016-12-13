@@ -2,37 +2,44 @@
 
 set -e
 
-write_default() {
-	local outfile=/etc/nginx/conf.d/default.conf
+add_subdomain() {
+	local subdomain="${1}"
+	local backend="${2}"
+	local full_domain="${subdomain}.${HOSTNAME}"
 
-	cat > "${outfile}" <<-EOF
+	if [[ -n "${CERT_EMAIL}" ]]; then
+		local listen="443 ssl"
+		local https_config=$(cat <<-EOF
+			ssl_certificate /etc/letsencrypt/live/${full_domain}/fullchain.pem;
+			ssl_certificate_key /etc/letsencrypt/live/${full_domain}/privkey.pem;
+			ssl_trusted_certificate /etc/letsencrypt/live/${full_domain}/chain.pem;
+
+			ssl_session_timeout 1d;
+			ssl_session_cache shared:SSL:50m;
+			ssl_session_tickets off;
+
+			# modern configuration from https://mozilla.github.io/server-side-tls/ssl-config-generator/
+			ssl_protocols TLSv1.2;
+			ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+			ssl_prefer_server_ciphers on;
+		EOF
+		)
+	else
+		local listen="80"
+	fi
+
+	cat > "/etc/nginx/conf.d/${subdomain}.conf" <<-EOF
 	server {
-		listen 80 default_server;
-		server_name ${HOSTNAME};
+		listen $listen;
+		server_name ${full_domain};
 
-		#include /opt/https_import.conf;
+		$https_config
 
-		location / {
-			root /usr/share/nginx/html;
+		location /.well-known/acme-challenge {
+			root /usr/share/nginx/html/.well-known/acme-challenge;
 			try_files \$uri \$uri/ =404;
 			autoindex off;
 		}
-
-	}
-	EOF
-}
-
-write_proxy () {
-	local subdomain="${1}"
-	local backend="${2}"
-	local outfile="/etc/nginx/conf.d/"${subdomain}".conf"
-
-	cat >> "${outfile}" <<-EOF
-	server {
-		listen 80;
-		server_name ${subdomain}.${HOSTNAME};
-
-		#include /opt/https_import.conf;
 
 		location / {
 			proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -42,35 +49,32 @@ write_proxy () {
 			proxy_pass ${backend};
 			proxy_set_header Host \$host;
 		}
+
 	}
 	EOF
-}
-
-cd "$(dirname ${0})"
-
-write_default "${listen}"
-while read line; do
-	write_proxy $line "${listen}"
-done < /etc/nginx/proxy-config.cfg
-
-if [[ -n "${CERT_EMAIL}" ]]; then
-	if [[ ! -f /etc/letsencrypt/live/${HOSTNAME}/fullchain.pem ]]; then
+	if [[ -n "${CERT_EMAIL}" && ! -f /etc/letsencrypt/live/${full_domain}/fullchain.pem ]]; then
 		# Start nginx as a daemon
 		nginx
 
 		# Get certificate
-		certify.sh "${HOSTNAME}" "${CERT_EMAIL}"
+		echo "Requesting certificate for ${full_domain} on behalf of ${email}"
+
+		letsencrypt certonly --non-interactive --agree-tos \
+			--webroot --webroot-path "/usr/share/nginx/html" \
+			--domain "${full_domain}" \
+			--email "${email}"
 
 		# Stop nginx
 		nginx -s stop
 		wait $(cat /var/run/nginx.pid)
 	fi
+}
 
-	# Update configuration
-	sed -i "s/example.com/${HOSTNAME}/" /opt/https_import.conf
-	sed -i "s/listen 80/listen 443 ssl/" /etc/nginx/conf.d/*
-	sed -i "s/#include/include/" /etc/nginx/conf.d/*
-fi
+cd "$(dirname ${0})"
+
+while read line; do
+	add_subdomain $line
+done < /etc/nginx/proxy-config.cfg
 
 nginx -g "daemon off;"
 
