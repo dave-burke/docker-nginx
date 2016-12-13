@@ -5,7 +5,7 @@ set -e
 add_subdomain() {
 	local subdomain="${1}"
 	local backend="${2}"
-	local full_domain="${subdomain}.${HOSTNAME}"
+	local full_domain="${subdomain}.${ROOT_DOMAIN}"
 
 	if [[ -n "${CERT_EMAIL}" ]]; then
 		local listen="443 ssl"

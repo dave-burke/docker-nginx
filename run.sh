@@ -49,7 +49,7 @@ docker run --detach --name ${name} \
 	--volumes-from "${data_name}" \
 	--publish 80:80 \
 	$httpsArgs \
-	--hostname "${host}" \
+	--env ROOT_DOMAIN="${host}" \
 	${image}
 set +x
 
