@@ -50,6 +50,16 @@ add_subdomain() {
 	EOF
 	CERTIFY_ARGS="$CERTIFY_DOMAINS --domain ${full_domain} "
 }
+
+redirect_to_https() {
+	cat > "/etc/nginx/conf.d/default.conf" <<-EOF
+	server {
+		listen 80 default_server;
+		return 301 https://\$host\$request_uri;
+	}
+	EOF
+}
+
 certify() {
 	if [[ -n "${CERT_EMAIL}" ]]; then
 		# Get certificate
@@ -60,6 +70,10 @@ certify() {
 			$@ \
 			--email "${CERT_EMAIL}"
 		set +x
+
+		ls /etc/letsencrypt/live/
+
+		redirect_to_https
 	fi
 }
 
