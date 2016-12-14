@@ -51,7 +51,7 @@ add_subdomain() {
 	CERTIFY_ARGS="$CERTIFY_DOMAINS --domain ${full_domain} "
 }
 certify() {
-	if [[ -n "${CERT_EMAIL}" && ! -f /etc/letsencrypt/live/${ROOT_DOMAIN}/fullchain.pem ]]; then
+	if [[ -n "${CERT_EMAIL}" ]]; then
 		# Get certificate
 		set -x
 		letsencrypt certonly --non-interactive --agree-tos \
