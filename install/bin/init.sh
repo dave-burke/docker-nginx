@@ -2,6 +2,8 @@
 
 set -e
 
+CERTIFY_ARGS=""
+
 add_subdomain() {
 	local subdomain="${1}"
 	local backend="${2}"
@@ -35,12 +37,6 @@ add_subdomain() {
 
 		$https_config
 
-		location /.well-known/acme-challenge {
-			root /usr/share/nginx/html/.well-known/acme-challenge;
-			try_files \$uri \$uri/ =404;
-			autoindex off;
-		}
-
 		location / {
 			proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 			proxy_set_header X-Forwarded-Host \$host;
@@ -52,21 +48,18 @@ add_subdomain() {
 
 	}
 	EOF
-	if [[ -n "${CERT_EMAIL}" && ! -f /etc/letsencrypt/live/${full_domain}/fullchain.pem ]]; then
-		# Start nginx as a daemon
-		nginx
-
+	CERTIFY_ARGS="$CERTIFY_DOMAINS --domain ${full_domain} "
+}
+certify() {
+	if [[ -n "${CERT_EMAIL}" && ! -f /etc/letsencrypt/live/${ROOT_DOMAIN}/fullchain.pem ]]; then
 		# Get certificate
-		echo "Requesting certificate for ${full_domain} on behalf of ${email}"
-
+		set -x
 		letsencrypt certonly --non-interactive --agree-tos \
-			--webroot --webroot-path "/usr/share/nginx/html" \
-			--domain "${full_domain}" \
-			--email "${email}"
-
-		# Stop nginx
-		nginx -s stop
-		wait $(cat /var/run/nginx.pid)
+			--standalone \
+			--expand \
+			$@ \
+			--email "${CERT_EMAIL}"
+		set +x
 	fi
 }
 
@@ -75,6 +68,7 @@ cd "$(dirname ${0})"
 while read line; do
 	add_subdomain $line
 done < /etc/nginx/proxy-config.cfg
+certify $CERTIFY_ARGS
 
 nginx -g "daemon off;"
 
