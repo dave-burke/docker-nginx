@@ -37,6 +37,11 @@ add_subdomain() {
 
 		$https_config
 
+		location = /robots.txt {
+			root /usr/share/nginx/html;
+			try_files \$uri =404;
+		}
+
 		location / {
 			proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
 			proxy_set_header X-Forwarded-Host \$host;
