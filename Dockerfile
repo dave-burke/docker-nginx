@@ -8,7 +8,7 @@ RUN apk update && apk add certbot
 RUN rm -rf /usr/share/nginx/html/* /etc/nginx/conf.d/*
 
 # Utility scripts
-COPY ./install/bin/* /usr/local/bin/
+COPY init.sh /usr/local/bin/
 
 EXPOSE 80 443
 
